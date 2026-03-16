@@ -47,4 +47,8 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function industries()
+    {
+        return $this->hasMany(Industry::class, 'created_by');
+    }
 }
