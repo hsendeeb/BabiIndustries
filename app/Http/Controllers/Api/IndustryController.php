@@ -15,7 +15,11 @@ class IndustryController extends Controller
      */
     public function index()
     {
-        return response()->json(Industry::all()->select('id', 'name', 'slug', 'description'),200);
+        $industries=Industry::with(['services','category'])
+        ->select('id', 'name', 'slug', 'description', 'category_id')
+        ->get();
+        return response()->json( $industries ,200);
+      
     }
 
     /**
@@ -26,7 +30,8 @@ class IndustryController extends Controller
         Gate::authorize('create', Industry::class);
         $validated=$request->validate([
             'name'=>'required|string|max:255|unique:industries,name',
-            'description'=>'nullable|string'
+            'description'=>'nullable|string',
+            'category_id'=>'required|integer|exists:categories,id'
         ]);
         $baseSlug = Str::slug($validated['name']);
         if (Industry::where('slug', $baseSlug)->exists()) {
@@ -39,6 +44,7 @@ class IndustryController extends Controller
             'name' => $validated['name'],
             'slug' => $baseSlug,
             'description' => $validated['description'] ?? null,
+            'category_id' => $validated['category_id']
         ]);
         return response()->json([
             'message' => 'Industry created successfully',
@@ -62,10 +68,14 @@ class IndustryController extends Controller
         Gate::authorize('update', $industry);
         $validated=$request->validate([
             'name'=>'required|string|max:255|unique:industries,name,'.$industry->id,
-            'description'=>'nullable|string'
+            'description'=>'nullable|string',
+            'category_id'=>'required|integer|exists:categories,id'
         ]);
         $industry->update($validated);
-        return response()->json($industry,200);
+        return response()->json([
+            'message' => 'Industry updated successfully',
+            'data' => $industry
+        ], 200);
     }
 
     /**
