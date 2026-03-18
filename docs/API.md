@@ -468,17 +468,56 @@ Status codes:
 
 `PUT /categories/{category}`
 
+Request body:
+
+```json
+{
+  "name": "Industrial"
+}
+```
+
 Notes:
 
-- `routes/api.php` includes this route, but the current `CategoryController` does not implement an `update` method yet.
+- `slug` is generated from `name`.
+- If a slug already exists, the API returns `409 Conflict`.
+
+Response example:
+
+```json
+{
+  "message": "Category updated successfully",
+  "data": {
+    "id": 1,
+    "name": "Industrial",
+    "slug": "industrial"
+  }
+}
+```
+
+Status codes:
+
+- `200 OK`
+- `401 Unauthorized` if the token is missing or invalid
+- `409 Conflict` if the generated slug already exists
+- `422 Unprocessable Entity` for validation errors
 
 ### Delete Category (Protected)
 
 `DELETE /categories/{category}`
 
-Notes:
+Response example:
 
-- `routes/api.php` includes this route, but the current `CategoryController` does not implement a `destroy` method yet.
+```json
+{
+  "message": "Category deleted successfully"
+}
+```
+
+Status codes:
+
+- `200 OK`
+- `401 Unauthorized` if the token is missing or invalid
+- `404 Not Found` if the category does not exist
 
 ## Error Format
 
