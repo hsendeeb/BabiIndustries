@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Industry extends Model
 {
@@ -18,6 +19,15 @@ class Industry extends Model
     }
     public function category() {
         return $this->belongsTo(Category::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Industry $industry): void {
+            if (empty($industry->created_by) && Auth::check()) {
+                $industry->created_by = Auth::id();
+            }
+        });
     }
    
 }

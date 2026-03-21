@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Industry;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use phpDocumentor\Reflection\PseudoTypes\True_;
 
 class IndustryPolicy
 {
@@ -13,7 +14,7 @@ class IndustryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,7 +22,7 @@ class IndustryPolicy
      */
     public function view(User $user, Industry $industry): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -29,7 +30,7 @@ class IndustryPolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->role==='admin';
     }
 
     /**
@@ -37,7 +38,7 @@ class IndustryPolicy
      */
     public function update(User $user, Industry $industry): bool
     {
-        return true;
+        return $user->role==='admin';
     }
 
     /**
@@ -45,7 +46,7 @@ class IndustryPolicy
      */
     public function delete(User $user, Industry $industry): bool
     {
-        return false;
+        return $user->role==='admin';
     }
 
     /**
@@ -53,7 +54,7 @@ class IndustryPolicy
      */
     public function restore(User $user, Industry $industry): bool
     {
-        return false;
+        return $user->role==='admin';
     }
 
     /**
@@ -61,6 +62,6 @@ class IndustryPolicy
      */
     public function forceDelete(User $user, Industry $industry): bool
     {
-        return false;
+        return $user->role==='admin';
     }
 }

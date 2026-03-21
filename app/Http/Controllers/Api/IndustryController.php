@@ -83,6 +83,7 @@ class IndustryController extends Controller
      */
     public function destroy(Industry $industry)
     {
+        Gate::authorize('delete',$industry);
         $industry->delete();
         return response()->json([
             'message' => 'Industry deleted successfully',
