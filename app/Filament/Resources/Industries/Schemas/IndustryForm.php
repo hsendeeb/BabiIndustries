@@ -30,6 +30,11 @@ class IndustryForm
                 Textarea::make('description')
                     ->columnSpanFull()
                     ->rows(4),
+                TextInput::make('icon')
+                    ->label('Icon')
+                    ->maxLength(255)
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled(trim((string) $state)) ? trim((string) $state) : null)
+                    ->helperText('Store an icon value, for example: heroicon-o-building-office-2'),
                 Select::make('category_id')
                     ->relationship('category', 'name')
                     ->required()

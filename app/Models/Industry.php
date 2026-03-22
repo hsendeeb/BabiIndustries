@@ -8,7 +8,13 @@ use Illuminate\Support\Facades\Auth;
 class Industry extends Model
 {
     protected $table = 'industries';
-    protected $fillable = ['name', 'slug', 'description','category_id'];
+    protected $fillable = ['name', 'slug', 'description', 'icon', 'category_id'];
+
+    public function setIconAttribute(?string $value): void
+    {
+        $value = is_string($value) ? trim($value) : $value;
+        $this->attributes['icon'] = filled($value) ? $value : null;
+    }
  
     public function user()
     {

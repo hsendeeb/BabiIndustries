@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Industries\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -21,6 +23,10 @@ class IndustriesTable
                 TextColumn::make('slug')
                     ->searchable()
                     ->sortable(),
+                IconColumn::make('icon')
+                    ->label('Icon')
+                    ->icon(fn (?string $state): string => (filled(trim((string) $state)) ? trim((string) $state) : Heroicon::OutlinedQuestionMarkCircle))
+                    ->toggleable(),
                 TextColumn::make('category.name')
                     ->label('Category')
                     ->sortable()

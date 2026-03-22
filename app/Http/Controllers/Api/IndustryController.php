@@ -16,7 +16,7 @@ class IndustryController extends Controller
     public function index()
     {
         $industries=Industry::with(['services','category'])
-        ->select('id', 'name', 'slug', 'description', 'category_id')
+        ->select('id', 'name', 'slug', 'description', 'icon', 'category_id')
         ->get();
         return response()->json( $industries ,200);
       
@@ -31,6 +31,7 @@ class IndustryController extends Controller
         $validated=$request->validate([
             'name'=>'required|string|max:255|unique:industries,name',
             'description'=>'nullable|string',
+            'icon'=>'nullable|string|max:255',
             'category_id'=>'required|integer|exists:categories,id'
         ]);
         $baseSlug = Str::slug($validated['name']);
@@ -44,6 +45,7 @@ class IndustryController extends Controller
             'name' => $validated['name'],
             'slug' => $baseSlug,
             'description' => $validated['description'] ?? null,
+            'icon' => $validated['icon'] ?? null,
             'category_id' => $validated['category_id']
         ]);
         return response()->json([
@@ -69,6 +71,7 @@ class IndustryController extends Controller
         $validated=$request->validate([
             'name'=>'required|string|max:255|unique:industries,name,'.$industry->id,
             'description'=>'nullable|string',
+            'icon'=>'nullable|string|max:255',
             'category_id'=>'required|integer|exists:categories,id'
         ]);
         $industry->update($validated);
