@@ -1,13 +1,13 @@
 # API Documentation
 
-This document describes the HTTP API exposed by this application, based on `routes/api.php` and the current controller implementations.
+This document describes the HTTP API exposed by this application, based on current `routes/api.php` and controller/resource implementations.
 
 ## Base URL
 
 Use your application base URL, for example:
 
-```
-https://your-domain.test/api
+```text
+https://your-domain.test/api/v1
 ```
 
 ## Authentication
@@ -29,7 +29,7 @@ Request body:
 }
 ```
 
-Responses:
+Response:
 
 ```json
 {
@@ -40,8 +40,8 @@ Responses:
 
 Status codes:
 
-- `201 Created` on success
-- `422 Unprocessable Entity` for validation errors
+- `201 Created`
+- `422 Unprocessable Entity`
 
 ### Login
 
@@ -56,7 +56,7 @@ Request body:
 }
 ```
 
-Responses:
+Response:
 
 ```json
 {
@@ -67,21 +67,21 @@ Responses:
 
 Status codes:
 
-- `200 OK` on success
-- `401 Unauthorized` for invalid credentials
-- `422 Unprocessable Entity` for validation errors
+- `200 OK`
+- `401 Unauthorized`
+- `422 Unprocessable Entity`
 
 ### Logout (Protected)
 
 `POST /logout`
 
-Headers:
+Header:
 
-```
+```text
 Authorization: Bearer {token}
 ```
 
-Responses:
+Response:
 
 ```json
 {
@@ -91,18 +91,59 @@ Responses:
 
 Status codes:
 
-- `200 OK` on success
-- `401 Unauthorized` if the token is missing or invalid
+- `200 OK`
+- `401 Unauthorized`
 
 ## Protected Routes
 
-All create, update, and delete operations require authentication with a Sanctum token.
+Create, update, and delete operations require a Sanctum token:
 
-```
+```text
 Authorization: Bearer {token}
 ```
 
-Some operations also require authorization via policies (for example, creating or updating industries). A `403 Forbidden` may be returned if the current user is not allowed to perform the action.
+Industry create/update/delete also enforce policy authorization and may return `403 Forbidden`.
+
+## Response Shape
+
+### Paginated list endpoints
+
+`GET /industries`, `GET /services`, `GET /categories` return Laravel API Resource pagination:
+
+```json
+{
+  "data": [],
+  "links": {
+    "first": "...",
+    "last": "...",
+    "prev": null,
+    "next": "..."
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "path": "...",
+    "per_page": 15,
+    "to": 1,
+    "total": 1
+  },
+  "message": "... fetched successfully"
+}
+```
+
+`per_page` query parameter is supported on list endpoints (`1` to `100`, default `15`).
+
+### Single/create/update endpoints
+
+These return:
+
+```json
+{
+  "message": "...",
+  "data": {}
+}
+```
 
 ## Industries
 
@@ -110,24 +151,40 @@ Some operations also require authorization via policies (for example, creating o
 
 `GET /industries`
 
-Response example:
+Query params:
+
+- `per_page` (optional): integer between `1` and `100`
+
+Notes:
+
+- Each industry includes associated `services` and `category` summary.
+- `services_count` is also included.
+
+`data[]` item shape:
 
 ```json
-[
-  {
+{
+  "id": 1,
+  "name": "Inventory Management",
+  "slug": "inventory-management",
+  "description": "...",
+  "icon": "heroicon-o-building-office-2",
+  "category_id": 1,
+  "services_count": 2,
+  "category": {
     "id": 1,
-    "name": "Manufacturing",
-    "slug": "manufacturing",
-    "description": "Industrial manufacturing services",
-    "category_id": 2,
-    "services": [],
-    "category": {
-      "id": 2,
-      "name": "Industrial",
-      "slug": "industrial"
+    "name": "Supply chain",
+    "slug": "supply-chain"
+  },
+  "services": [
+    {
+      "id": 10,
+      "name": "Track stock levels",
+      "slug": "track-stock-levels",
+      "industry_id": 1
     }
-  }
-]
+  ]
+}
 ```
 
 Status codes:
@@ -138,22 +195,12 @@ Status codes:
 
 `GET /industries/{industry}`
 
-Response example:
-
-```json
-{
-  "id": 1,
-  "name": "Manufacturing",
-  "slug": "manufacturing",
-  "description": "Industrial manufacturing services",
-  "category_id": 2
-}
-```
+Response `data` contains the same shape as above (including `services`, `category`, and `services_count`).
 
 Status codes:
 
 - `200 OK`
-- `404 Not Found` if the industry does not exist
+- `404 Not Found`
 
 ### Create Industry (Protected)
 
@@ -163,39 +210,26 @@ Request body:
 
 ```json
 {
-  "name": "Manufacturing",
-  "description": "Industrial manufacturing services",
-  "category_id": 2
+  "name": "Inventory Management",
+  "description": "Optional description",
+  "icon": "heroicon-o-building-office-2",
+  "category_id": 1
 }
 ```
 
 Notes:
 
-- `slug` is generated from `name`.
-- If a slug already exists, the API returns `409 Conflict`.
-
-Response example:
-
-```json
-{
-  "message": "Industry created successfully",
-  "data": {
-    "id": 1,
-    "name": "Manufacturing",
-    "slug": "manufacturing",
-    "description": "Industrial manufacturing services",
-    "category_id": 2
-  }
-}
-```
+- `slug` is generated from trimmed `name`.
+- `name`, `slug`, and `icon` are sanitized (trimmed) before persistence.
+- If generated slug already exists, API returns `409 Conflict`.
 
 Status codes:
 
 - `201 Created`
-- `401 Unauthorized` if the token is missing or invalid
-- `403 Forbidden` if the user is not authorized by policy
-- `409 Conflict` if the generated slug already exists
-- `422 Unprocessable Entity` for validation errors
+- `401 Unauthorized`
+- `403 Forbidden`
+- `409 Conflict`
+- `422 Unprocessable Entity`
 
 ### Update Industry (Protected)
 
@@ -205,39 +239,31 @@ Request body:
 
 ```json
 {
-  "name": "Advanced Manufacturing",
+  "name": "Inventory Management Updated",
   "description": "Updated description",
-  "category_id": 2
+  "icon": "heroicon-o-cog",
+  "category_id": 1
 }
 ```
 
-Response example:
+Notes:
 
-```json
-{
-  "message": "Industry updated successfully",
-  "data": {
-    "id": 1,
-    "name": "Advanced Manufacturing",
-    "slug": "advanced-manufacturing",
-    "description": "Updated description",
-    "category_id": 2
-  }
-}
-```
+- `slug` is regenerated from trimmed `name`.
+- Slug uniqueness is enforced (excluding current record).
 
 Status codes:
 
 - `200 OK`
-- `401 Unauthorized` if the token is missing or invalid
-- `403 Forbidden` if the user is not authorized by policy
-- `422 Unprocessable Entity` for validation errors
+- `401 Unauthorized`
+- `403 Forbidden`
+- `409 Conflict`
+- `422 Unprocessable Entity`
 
 ### Delete Industry (Protected)
 
 `DELETE /industries/{industry}`
 
-Response example:
+Response:
 
 ```json
 {
@@ -248,9 +274,9 @@ Response example:
 Status codes:
 
 - `200 OK`
-- `401 Unauthorized` if the token is missing or invalid
-- `403 Forbidden` if the user is not authorized by policy
-- `404 Not Found` if the industry does not exist
+- `401 Unauthorized`
+- `403 Forbidden`
+- `404 Not Found`
 
 ## Services
 
@@ -258,17 +284,24 @@ Status codes:
 
 `GET /services`
 
-Response example:
+Query params:
+
+- `per_page` (optional): integer between `1` and `100`
+
+`data[]` item shape:
 
 ```json
-[
-  {
+{
+  "id": 1,
+  "name": "Track stock levels",
+  "slug": "track-stock-levels",
+  "industry_id": 1,
+  "industry": {
     "id": 1,
-    "name": "Welding",
-    "slug": "welding",
-    "industry_id": 1
+    "name": "Inventory Management",
+    "slug": "inventory-management"
   }
-]
+}
 ```
 
 Status codes:
@@ -279,21 +312,12 @@ Status codes:
 
 `GET /services/{service}`
 
-Response example:
-
-```json
-{
-  "id": 1,
-  "name": "Welding",
-  "slug": "welding",
-  "industry_id": 1
-}
-```
+Response `data` follows the same shape as list item (including `industry` summary).
 
 Status codes:
 
 - `200 OK`
-- `404 Not Found` if the service does not exist
+- `404 Not Found`
 
 ### Create Service (Protected)
 
@@ -303,36 +327,22 @@ Request body:
 
 ```json
 {
-  "name": "Welding",
+  "name": "Track stock levels",
   "industry_id": 1
 }
 ```
 
 Notes:
 
-- `slug` is generated from `name`.
-- If a slug already exists, the API returns `409 Conflict`.
-
-Response example:
-
-```json
-{
-  "message": "Service created successfully",
-  "data": {
-    "id": 1,
-    "name": "Welding",
-    "slug": "welding",
-    "industry_id": 1
-  }
-}
-```
+- `slug` is generated from trimmed `name`.
+- Slug uniqueness enforced.
 
 Status codes:
 
 - `201 Created`
-- `401 Unauthorized` if the token is missing or invalid
-- `409 Conflict` if the generated slug already exists
-- `422 Unprocessable Entity` for validation errors
+- `401 Unauthorized`
+- `409 Conflict`
+- `422 Unprocessable Entity`
 
 ### Update Service (Protected)
 
@@ -342,37 +352,23 @@ Request body:
 
 ```json
 {
-  "name": "Advanced Welding",
+  "name": "Track stock levels and warehouses",
   "industry_id": 1
-}
-```
-
-Response example:
-
-```json
-{
-  "message": "Service updated successfully",
-  "data": {
-    "id": 1,
-    "name": "Advanced Welding",
-    "slug": "advanced-welding",
-    "industry_id": 1
-  }
 }
 ```
 
 Status codes:
 
 - `200 OK`
-- `401 Unauthorized` if the token is missing or invalid
-- `409 Conflict` if the generated slug already exists
-- `422 Unprocessable Entity` for validation errors
+- `401 Unauthorized`
+- `409 Conflict`
+- `422 Unprocessable Entity`
 
 ### Delete Service (Protected)
 
 `DELETE /services/{service}`
 
-Response example:
+Response:
 
 ```json
 {
@@ -383,8 +379,8 @@ Response example:
 Status codes:
 
 - `200 OK`
-- `401 Unauthorized` if the token is missing or invalid
-- `404 Not Found` if the service does not exist
+- `401 Unauthorized`
+- `404 Not Found`
 
 ## Categories
 
@@ -392,16 +388,19 @@ Status codes:
 
 `GET /categories`
 
-Response example:
+Query params:
+
+- `per_page` (optional): integer between `1` and `100`
+
+`data[]` item shape:
 
 ```json
-[
-  {
-    "id": 1,
-    "name": "Industrial",
-    "slug": "industrial"
-  }
-]
+{
+  "id": 1,
+  "name": "Supply chain",
+  "slug": "supply-chain",
+  "industries_count": 3
+}
 ```
 
 Status codes:
@@ -412,20 +411,12 @@ Status codes:
 
 `GET /categories/{category}`
 
-Response example:
-
-```json
-{
-  "id": 1,
-  "name": "Industrial",
-  "slug": "industrial"
-}
-```
+Response `data` follows the same shape as list item.
 
 Status codes:
 
 - `200 OK`
-- `404 Not Found` if the category does not exist
+- `404 Not Found`
 
 ### Create Category (Protected)
 
@@ -435,34 +426,21 @@ Request body:
 
 ```json
 {
-  "name": "Industrial"
+  "name": "Supply chain"
 }
 ```
 
 Notes:
 
-- `slug` is generated from `name`.
-- If a slug already exists, the API returns `409 Conflict`.
-
-Response example:
-
-```json
-{
-  "message": "Category created successfully",
-  "data": {
-    "id": 1,
-    "name": "Industrial",
-    "slug": "industrial"
-  }
-}
-```
+- `slug` is generated from trimmed `name`.
+- Slug uniqueness enforced.
 
 Status codes:
 
 - `201 Created`
-- `401 Unauthorized` if the token is missing or invalid
-- `409 Conflict` if the generated slug already exists
-- `422 Unprocessable Entity` for validation errors
+- `401 Unauthorized`
+- `409 Conflict`
+- `422 Unprocessable Entity`
 
 ### Update Category (Protected)
 
@@ -472,40 +450,22 @@ Request body:
 
 ```json
 {
-  "name": "Industrial"
-}
-```
-
-Notes:
-
-- `slug` is generated from `name`.
-- If a slug already exists, the API returns `409 Conflict`.
-
-Response example:
-
-```json
-{
-  "message": "Category updated successfully",
-  "data": {
-    "id": 1,
-    "name": "Industrial",
-    "slug": "industrial"
-  }
+  "name": "Supply chain and logistics"
 }
 ```
 
 Status codes:
 
 - `200 OK`
-- `401 Unauthorized` if the token is missing or invalid
-- `409 Conflict` if the generated slug already exists
-- `422 Unprocessable Entity` for validation errors
+- `401 Unauthorized`
+- `409 Conflict`
+- `422 Unprocessable Entity`
 
 ### Delete Category (Protected)
 
 `DELETE /categories/{category}`
 
-Response example:
+Response:
 
 ```json
 {
@@ -516,16 +476,16 @@ Response example:
 Status codes:
 
 - `200 OK`
-- `401 Unauthorized` if the token is missing or invalid
-- `404 Not Found` if the category does not exist
+- `401 Unauthorized`
+- `404 Not Found`
 
-## Error Format
+## Validation Error Format
 
-Validation errors follow Laravel’s default structure, for example:
+Validation errors follow Laravel's default format:
 
 ```json
 {
-  "message": "The name field is required.",
+  "message": "The given data was invalid.",
   "errors": {
     "name": [
       "The name field is required."
