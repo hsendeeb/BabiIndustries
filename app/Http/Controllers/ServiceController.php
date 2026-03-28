@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\ServiceResource as ApiServiceResource;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
@@ -24,6 +25,8 @@ class ServiceController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('create', Service::class);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:services,name',
             'industry_id' => 'required|integer|exists:industries,id',
@@ -58,8 +61,10 @@ class ServiceController extends Controller
 
     public function update(Request $request, Service $service)
     {
+        Gate::authorize('update', $service);
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:services,name,' . $service->id,
+            'name' => 'required|string|max:255|unique:services,name,'.$service->id,
             'industry_id' => 'required|integer|exists:industries,id',
         ]);
 
@@ -88,6 +93,8 @@ class ServiceController extends Controller
 
     public function destroy(Service $service)
     {
+        Gate::authorize('delete', $service);
+
         $service->delete();
 
         return response()->json([

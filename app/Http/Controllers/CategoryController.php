@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Resources\CategoryResource as ApiCategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
-
 
 class CategoryController extends Controller
 {
@@ -25,6 +25,8 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('create', Category::class);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
         ]);
@@ -57,8 +59,10 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
+        Gate::authorize('update', $category);
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
         ]);
 
         $baseSlug = Str::slug(trim($validated['name']));
@@ -81,6 +85,8 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        Gate::authorize('delete', $category);
+
         $category->delete();
 
         return response()->json([

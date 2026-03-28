@@ -94,6 +94,71 @@ Status codes:
 - `200 OK`
 - `401 Unauthorized`
 
+### Forgot Password
+
+`POST /forgot-password`
+
+Request body:
+
+```json
+{
+  "email": "jane@example.com"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "We have emailed your password reset link."
+}
+```
+
+Notes:
+
+- The reset email uses `FRONTEND_RESET_PASSWORD_URL` when present.
+- If `FRONTEND_RESET_PASSWORD_URL` is not set, the email falls back to `{APP_URL}/reset-password`.
+- The generated link includes `token` and `email` query parameters for your frontend reset screen.
+- The endpoint always returns the same success message, even for unknown emails, to avoid account enumeration.
+
+Status codes:
+
+- `200 OK`
+- `422 Unprocessable Entity`
+
+### Reset Password
+
+`POST /reset-password`
+
+Request body:
+
+```json
+{
+  "email": "jane@example.com",
+  "token": "reset-token-from-email",
+  "password": "new-secret123",
+  "password_confirmation": "new-secret123"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "Your password has been reset."
+}
+```
+
+Notes:
+
+- Successful password resets revoke all of the user's Sanctum tokens.
+
+Status codes:
+
+- `200 OK`
+- `400 Bad Request`
+- `422 Unprocessable Entity`
+
 ## Protected Routes
 
 Create, update, and delete operations require a Sanctum token:
