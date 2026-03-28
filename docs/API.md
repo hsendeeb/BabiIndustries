@@ -110,7 +110,7 @@ Response:
 
 ```json
 {
-  "message": "We have emailed your password reset link."
+  "message": "password reset link sent to your email"
 }
 ```
 
@@ -120,6 +120,7 @@ Notes:
 - If `FRONTEND_RESET_PASSWORD_URL` is not set, the email falls back to `{APP_URL}/reset-password`.
 - The generated link includes `token` and `email` query parameters for your frontend reset screen.
 - The endpoint always returns the same success message, even for unknown emails, to avoid account enumeration.
+- This endpoint sends the password reset email only; it does not change the password by itself.
 
 Status codes:
 
@@ -151,6 +152,9 @@ Response:
 
 Notes:
 
+- This endpoint is the password update step of the reset-password flow.
+- Use the `token` from the reset email link, not a Sanctum access token.
+- The `email` must match the same email address that received the reset link.
 - Successful password resets revoke all of the user's Sanctum tokens.
 
 Status codes:
@@ -167,7 +171,21 @@ Create, update, and delete operations require a Sanctum token:
 Authorization: Bearer {token}
 ```
 
-Industry create/update/delete also enforce policy authorization and may return `403 Forbidden`.
+Create, update, and delete operations for industries, services, and categories also enforce policy authorization.
+
+Only users with `role = admin` may:
+
+- create industries
+- update industries
+- delete industries
+- create services
+- update services
+- delete services
+- create categories
+- update categories
+- delete categories
+
+Protected write endpoints may return `403 Forbidden` when the authenticated user is not an admin.
 
 ## Response Shape
 
@@ -287,6 +305,7 @@ Notes:
 - `slug` is generated from trimmed `name`.
 - `name`, `slug`, and `icon` are sanitized (trimmed) before persistence.
 - If generated slug already exists, API returns `409 Conflict`.
+- Only admins can create industries.
 
 Status codes:
 
@@ -315,6 +334,7 @@ Notes:
 
 - `slug` is regenerated from trimmed `name`.
 - Slug uniqueness is enforced (excluding current record).
+- Only admins can update industries.
 
 Status codes:
 
@@ -335,6 +355,10 @@ Response:
   "message": "Industry deleted successfully"
 }
 ```
+
+Notes:
+
+- Only admins can delete industries.
 
 Status codes:
 
@@ -401,11 +425,13 @@ Notes:
 
 - `slug` is generated from trimmed `name`.
 - Slug uniqueness enforced.
+- Only admins can create services.
 
 Status codes:
 
 - `201 Created`
 - `401 Unauthorized`
+- `403 Forbidden`
 - `409 Conflict`
 - `422 Unprocessable Entity`
 
@@ -422,10 +448,17 @@ Request body:
 }
 ```
 
+Notes:
+
+- `slug` is regenerated from trimmed `name`.
+- Slug uniqueness is enforced (excluding current record).
+- Only admins can update services.
+
 Status codes:
 
 - `200 OK`
 - `401 Unauthorized`
+- `403 Forbidden`
 - `409 Conflict`
 - `422 Unprocessable Entity`
 
@@ -441,10 +474,15 @@ Response:
 }
 ```
 
+Notes:
+
+- Only admins can delete services.
+
 Status codes:
 
 - `200 OK`
 - `401 Unauthorized`
+- `403 Forbidden`
 - `404 Not Found`
 
 ## Categories
@@ -499,11 +537,13 @@ Notes:
 
 - `slug` is generated from trimmed `name`.
 - Slug uniqueness enforced.
+- Only admins can create categories.
 
 Status codes:
 
 - `201 Created`
 - `401 Unauthorized`
+- `403 Forbidden`
 - `409 Conflict`
 - `422 Unprocessable Entity`
 
@@ -519,10 +559,17 @@ Request body:
 }
 ```
 
+Notes:
+
+- `slug` is regenerated from trimmed `name`.
+- Slug uniqueness is enforced (excluding current record).
+- Only admins can update categories.
+
 Status codes:
 
 - `200 OK`
 - `401 Unauthorized`
+- `403 Forbidden`
 - `409 Conflict`
 - `422 Unprocessable Entity`
 
@@ -538,10 +585,15 @@ Response:
 }
 ```
 
+Notes:
+
+- Only admins can delete categories.
+
 Status codes:
 
 - `200 OK`
 - `401 Unauthorized`
+- `403 Forbidden`
 - `404 Not Found`
 
 ## Validation Error Format

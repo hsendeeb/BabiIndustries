@@ -72,7 +72,7 @@ class AuthController extends Controller
         Password::sendResetLink($validated);
 
         return response()->json([
-            'message' => __('passwords.sent'),
+            'message' => "password reset link sent to your email",
         ], 200);
     }
 
