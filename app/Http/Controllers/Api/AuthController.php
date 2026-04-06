@@ -13,9 +13,7 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -23,6 +21,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8|confirmed',
         ]);
+        $validated['role'] = 'user'; // Set default role
         $user = User::create($validated);
         $token = $user->createToken('access_token')->plainTextToken;
 
@@ -43,7 +42,7 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Invalid credentials',
             ], 401);
-        } else {
+        };
             $user = Auth::user();
             $token = $user->createToken('access_token')->plainTextToken;
 
@@ -51,7 +50,7 @@ class AuthController extends Controller
                 'token' => $token,
                 'message' => 'User logged in successfully',
             ], 200);
-        }
+        
     }
 
     public function logout(Request $request)

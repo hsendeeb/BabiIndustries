@@ -1,16 +1,20 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\IndustryController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    //throttle: 60 requests per minute
+Route::middleware('throttle:60,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/forgot-password', [AuthController::class, 'resetPassword']);
+});
+
+    Route::post('/reset-password', [AuthController::class, 'forgotPassword']);
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('industries', [IndustryController::class, 'store']);
         Route::put('industries/{industry}', [IndustryController::class, 'update']);

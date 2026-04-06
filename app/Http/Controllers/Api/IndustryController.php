@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreIndustryRequest;
+use App\Http\Requests\UpdateIndustryRequest;
 use App\Http\Resources\IndustryResource as ApiIndustryResource;
 use App\Models\Industry;
+use App\Services\SlugService;
+use App\Traits\PaginatedResults;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 
 class IndustryController extends Controller
 {
+    use PaginatedResults;
+
     /**
      * Display a listing of the resource.
      */
@@ -24,41 +29,29 @@ class IndustryController extends Controller
             ->latest('id')
             ->paginate($this->getPerPage($request));
 
-        return ApiIndustryResource::collection($industries)->additional([
-            'message' => 'Industries fetched successfully',
-        ]);
+        return ApiIndustryResource::collection($industries);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreIndustryRequest $request, SlugService $slugService)
     {
-        Gate::authorize('create', Industry::class);
-        $validated=$request->validate([
-            'name'=>'required|string|max:255|unique:industries,name',
-            'description'=>'nullable|string',
-            'icon'=>'nullable|string|max:255',
-            'category_id'=>'required|integer|exists:categories,id'
-        ]);
-        $baseSlug = Str::slug(trim($validated['name']));
-        if (Industry::where('slug', $baseSlug)->exists()) {
-            return response()->json([
-                'message' => 'Slug already exists',
-            ], 409);
-        }
+        $validated = $request->validated();
+        $baseSlug = $slugService->make($validated['name']);
 
-        $industry=auth()->user()->industries()->create([
+        $industry = auth()->user()->industries()->create([
             'name' => $validated['name'],
             'slug' => $baseSlug,
             'description' => $validated['description'] ?? null,
             'icon' => $validated['icon'] ?? null,
-            'category_id' => $validated['category_id']
+            'category_id' => $validated['category_id'],
         ]);
+
         return response()->json([
             'message' => 'Industry created successfully',
             'data' => new ApiIndustryResource($industry->load(['category:id,name,slug'])->loadCount('services')),
-        ],201);
+        ], 201);
     }
 
     /**
@@ -80,27 +73,10 @@ class IndustryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request,Industry $industry)
+    public function update(UpdateIndustryRequest $request, Industry $industry, SlugService $slugService)
     {
-        Gate::authorize('update', $industry);
-        $validated=$request->validate([
-            'name'=>'required|string|max:255|unique:industries,name,'.$industry->id,
-            'description'=>'nullable|string',
-            'icon'=>'nullable|string|max:255',
-            'category_id'=>'required|integer|exists:categories,id'
-        ]);
-
-        $baseSlug = Str::slug(trim($validated['name']));
-        if (
-            Industry::query()
-                ->where('slug', $baseSlug)
-                ->where('id', '!=', $industry->id)
-                ->exists()
-        ) {
-            return response()->json([
-                'message' => 'Slug already exists',
-            ], 409);
-        }
+        $validated = $request->validated();
+        $baseSlug = $slugService->make($validated['name']);
 
         $industry->update([
             'name' => $validated['name'],
@@ -121,15 +97,10 @@ class IndustryController extends Controller
      */
     public function destroy(Industry $industry)
     {
-        Gate::authorize('delete',$industry);
+        Gate::authorize('delete', $industry);
         $industry->delete();
         return response()->json([
             'message' => 'Industry deleted successfully',
-        ],200);
-    }
-
-    private function getPerPage(Request $request): int
-    {
-        return max(1, min(100, $request->integer('per_page', 15)));
+        ], 200);
     }
 }

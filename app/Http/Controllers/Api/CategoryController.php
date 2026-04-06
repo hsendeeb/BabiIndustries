@@ -1,15 +1,21 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource as ApiCategoryResource;
 use App\Models\Category;
+use App\Services\SlugService;
+use App\Traits\PaginatedResults;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
+    use PaginatedResults;
+
     public function index(Request $request)
     {
         $categories = Category::query()
@@ -18,25 +24,13 @@ class CategoryController extends Controller
             ->latest('id')
             ->paginate($this->getPerPage($request));
 
-        return ApiCategoryResource::collection($categories)->additional([
-            'message' => 'Categories fetched successfully',
-        ]);
+        return ApiCategoryResource::collection($categories);
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request, SlugService $slugService)
     {
-        Gate::authorize('create', Category::class);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
-        ]);
-
-        $baseSlug = Str::slug(trim($validated['name']));
-        if (Category::where('slug', $baseSlug)->exists()) {
-            return response()->json([
-                'message' => 'Slug already exists',
-            ], 409);
-        }
+        $validated = $request->validated();
+        $baseSlug = $slugService->make($validated['name']);
 
         $category = Category::create([
             'name' => $validated['name'],
@@ -57,20 +51,10 @@ class CategoryController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, Category $category)
+    public function update(UpdateCategoryRequest $request, Category $category, SlugService $slugService)
     {
-        Gate::authorize('update', $category);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
-        ]);
-
-        $baseSlug = Str::slug(trim($validated['name']));
-        if (Category::where('slug', $baseSlug)->where('id', '!=', $category->id)->exists()) {
-            return response()->json([
-                'message' => 'Slug already exists',
-            ], 409);
-        }
+        $validated = $request->validated();
+        $baseSlug = $slugService->make($validated['name']);
 
         $category->update([
             'name' => $validated['name'],
@@ -92,10 +76,5 @@ class CategoryController extends Controller
         return response()->json([
             'message' => 'Category deleted successfully',
         ], 200);
-    }
-
-    private function getPerPage(Request $request): int
-    {
-        return max(1, min(100, $request->integer('per_page', 15)));
     }
 }

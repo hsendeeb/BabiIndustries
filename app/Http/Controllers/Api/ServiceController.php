@@ -1,15 +1,21 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\StoreServiceRequest;
+use App\Http\Requests\UpdateServiceRequest;
+use App\Http\Controllers\Controller;
 use App\Http\Resources\ServiceResource as ApiServiceResource;
 use App\Models\Service;
+use App\Services\SlugService;
+use App\Traits\PaginatedResults;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
+    use PaginatedResults;
+
     public function index(Request $request)
     {
         $services = Service::query()
@@ -18,26 +24,13 @@ class ServiceController extends Controller
             ->latest('id')
             ->paginate($this->getPerPage($request));
 
-        return ApiServiceResource::collection($services)->additional([
-            'message' => 'Services fetched successfully',
-        ]);
+        return ApiServiceResource::collection($services);
     }
 
-    public function store(Request $request)
+    public function store(StoreServiceRequest $request, SlugService $slugService)
     {
-        Gate::authorize('create', Service::class);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:services,name',
-            'industry_id' => 'required|integer|exists:industries,id',
-        ]);
-
-        $baseSlug = Str::slug(trim($validated['name']));
-        if (Service::where('slug', $baseSlug)->exists()) {
-            return response()->json([
-                'message' => 'Slug already exists',
-            ], 409);
-        }
+        $validated = $request->validated();
+        $baseSlug = $slugService->make($validated['name']);
 
         $service = Service::create([
             'name' => $validated['name'],
@@ -59,25 +52,10 @@ class ServiceController extends Controller
         ], 200);
     }
 
-    public function update(Request $request, Service $service)
+    public function update(UpdateServiceRequest $request, Service $service, SlugService $slugService)
     {
-        Gate::authorize('update', $service);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:services,name,'.$service->id,
-            'industry_id' => 'required|integer|exists:industries,id',
-        ]);
-
-        $baseSlug = Str::slug(trim($validated['name']));
-        $slugExists = Service::where('slug', $baseSlug)
-            ->where('id', '!=', $service->id)
-            ->exists();
-
-        if ($slugExists) {
-            return response()->json([
-                'message' => 'Slug already exists',
-            ], 409);
-        }
+        $validated = $request->validated();
+        $baseSlug = $slugService->make($validated['name']);
 
         $service->update([
             'name' => $validated['name'],
@@ -100,10 +78,5 @@ class ServiceController extends Controller
         return response()->json([
             'message' => 'Service deleted successfully',
         ], 200);
-    }
-
-    private function getPerPage(Request $request): int
-    {
-        return max(1, min(100, $request->integer('per_page', 15)));
     }
 }

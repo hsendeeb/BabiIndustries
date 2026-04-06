@@ -19,26 +19,26 @@ class CategoryPolicy
 
     public function create(User $user): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function update(User $user, Category $category): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function delete(User $user, Category $category): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function restore(User $user, Category $category): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function forceDelete(User $user, Category $category): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 }

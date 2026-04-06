@@ -55,8 +55,13 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Industry::class, 'created_by');
     }
 
-    public function canAccessPanel(Panel $panel): bool
+    public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->isAdmin();
     }
 }
