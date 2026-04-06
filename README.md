@@ -15,7 +15,7 @@ BabiIndustries is a Laravel application for managing categories, industries, and
 
 ```bash
 git clone https://github.com/hsendeeb/BabiIndustries.git
-cd babiindustries
+cd BabiIndustries
 ```
 
 2. Install PHP dependencies:

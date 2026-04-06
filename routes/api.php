@@ -11,10 +11,11 @@ Route::prefix('v1')->group(function () {
 Route::middleware('throttle:60,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/forgot-password', [AuthController::class, 'resetPassword']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+      Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
-    Route::post('/reset-password', [AuthController::class, 'forgotPassword']);
+  
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('industries', [IndustryController::class, 'store']);
         Route::put('industries/{industry}', [IndustryController::class, 'update']);
